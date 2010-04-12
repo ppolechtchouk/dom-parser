@@ -1,0 +1,3 @@
+The dom-parser project is layed out as required by my clojure-project.el emacs package. All clojure files are in the *src* directory, and the clojure files should be the only ones committed to the repository. External Java libs go to *lib* directory.
+
+--MORE TO FOLLOW
