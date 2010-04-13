@@ -170,25 +170,35 @@ Usage: (purge-children! node TEXT ENTITY) - removes all child nodes that are of 
      (.removeChild node cn))
     node))
 
-(defn get-comment
-  "Returns a COMMENT node directly above the node, or nil if none"
+(defn next-sibling
+  "Returns the next sibling of the node or nil if none or error"
   [node]
-  (let [pn (.getPreviousSibling node)]
-    (if (comment-node? pn)
-      pn
-      nil)))
+  (try
+   (.getNextSibling node)
+   (catch Exception _ nil)))
 
-(defn insert-before
-  "Inserts new_node directly above the node and returns the new_node if everything is ok or nil "
+(defn previous-sibling
+  "Returns the previous sibling of the node or nil if none or error"
+  [node]
+  (try
+   (.getPreviousSibling node)
+   (catch Exception _ nil)))
+
+(defn get-parent
+  "Returns a parent node or nil if none or error"
+  [node]
+  (.getParentNode node))
+
+(defn insert-before!
+  "Inserts new_node directly above the node and returns the new_node if everything is ok or nil.
+If new_node is a document fragment node the contents of the document fragment are inserted in order."
   [node new_node]
-  );;TODO exception handling
-(defn add-comment
-  "Adds a COMMENT node containing text directly above the node."
-  [node text]
-  )
+  (try
+   (.insertBefore (get-parent node) new_node node)
+   (catch Exception _ nil)));;TODO check what should be returned
 
-(defn get-first-element-after
-  "Return the first sibling of the specified element type after the node in the node list, or nil if none. element should be a keyword, i.e. :vardcl, :setvar"
-  [node element]
-  )
+
+
+
+
 
