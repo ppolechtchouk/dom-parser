@@ -1,5 +1,5 @@
 (ns dom.printer
-  #^{:author "Pavel Polechtchouk"
+   #^{:author "Pavel Polechtchouk"
      :doc "Converts DOM classes to string representations"}
   (:use   [clojure.contrib.str-utils :only (re-split str-join)]
 	  [dom.parser])
@@ -12,18 +12,6 @@
 
 (def *tab* "  ") ;element tabulation 
 (def *encoding* "ISO-8859-1") ;xml document encoding
-
-(defn trim-whitespace
-  "Returns a string with excessive whitespace removed"
-  [#^String s]
-  (str-join "\n" 
-	    (map #(.trim %) (re-split (re-pattern "\n") s))))
-
-(defn remove-empty-lines
-  "Returns a string with trimmed whitespace and empty lines removed"
-  [#^String s]
-  (str-join "\n" 
-	    (filter #(not (empty? %)) (map #(.trim %) (re-split (re-pattern "\n") s)))))
 
 (defn str-attributes
   "Returns a string representation of the attributes of the node, or nil if there are none"
@@ -61,12 +49,13 @@
   [node tab]
   (str "\n\n" tab "<!--" (.getNodeValue node) "-->"))
 
+; should be used on node structure that has been treated with normalize-text!
 (defmethod str-node Node/TEXT_NODE 
   [node tab] 
-  (let [text (remove-empty-lines (.getNodeValue node))]
+  (let [text (.getNodeValue node)]
     (if (empty? text)
       nil
-      (str "\n" tab text))))
+      (str "\n" tab text)))) 
 
 (defmethod str-node Node/ENTITY_REFERENCE_NODE 
   [node tab]
