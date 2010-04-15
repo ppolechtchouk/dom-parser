@@ -57,7 +57,7 @@
   (node-list (.getChildNodes node)))
 
 (defn filter-out-children
-  "Returns a list of child nodes with nodes of the selected types removed. Only immediate children are affected - i.e. this function purges only 1 level deep."
+  "Returns a list of child nodes with nodes of the selected types removed. Only immediate children are affected - i.e. this function filters only 1 level deep."
   [node & types]
    (let [rs (set types)]
      (filter #(not (contains? rs (.getNodeType %))) (get-children node))))
@@ -70,21 +70,22 @@
 (defn element-node? 
   "Returns true if the node is of the ELEMENT type."
   [node]
-  (try
-   (and (node? node) (= ELEMENT (.getNodeType node)))
-   (catch Exception _ false)))
+  (and (node? node) (= ELEMENT (.getNodeType node))))
 
 (defn comment-node? 
   "Returns true if the node is of the COMMENT type."
   [node]
-  (try
-   (and (node? node) (= COMMENT (.getNodeType node)))
-   (catch Exception _ false)))
+  (and (node? node) (= COMMENT (.getNodeType node))))
 
 (defn document-node? 
   "Returns true if the node is of the DOCUMENT type."
   [node]
    (instance? Document node))
+
+(defn text-node?
+  "Returns true if the node is of the COMMENT type"
+  [node]
+  (and (node? node) (= TEXT (.getNodeType node))))
 
 
 (defn get-root
@@ -99,15 +100,6 @@
   [node]
   (if (node? node)
     (.getOwnerDocument node)))
-
-(defn purge-children!
-  "Removes all the child nodes of the supplied node type and returns the node. Note that this is a destructive operation! Can be used to clean up the DOM.
-Usage: (purge-children! node TEXT ENTITY) - removes all child nodes that are of the TEXT or ENTITY type"
-  [node & TYPES]
-  (let [t (set TYPES)]
-    (doseq [cn (filter #(contains? t (.getNodeType %)) (get-children node))] 
-     (.removeChild node cn))
-    node))
 
 (defn next-sibling
   "Returns the next sibling of the node or nil if none or error"
@@ -129,6 +121,16 @@ Usage: (purge-children! node TEXT ENTITY) - removes all child nodes that are of 
   (try
    (.getParentNode node)
    (catch Exception _ nil)))
+
+(defn first-child
+  "Returns the first child node of the node or nil if none"
+  [#^Node node]
+  (.getFirstChild node))
+
+(defn last-child
+  "Returns the last child node of the node or nil if none"
+  [#^Node node]
+  (.getLastChild node))
 
 (defn insert-before!
   "Inserts new_node directly above the node and returns the new_node if everything is ok or nil.
@@ -154,8 +156,31 @@ Usage:
        (recur (conj result node) (get_fn node))
        (if (empty? result) nil result)))))
 
+(defn remove-node!
+ "Removes the node from the DOM structure. If operation is successful, the removed node is returned, otherwise nil."
+ [#^Node node]
+ (try
+  (.removeChild (get-parent node) node)
+  (catch Exception _ nil)))
+
+(defn replace-node!
+  "Replaces old_node by the new_node. If the operation is successful, old_node is returned, otherwise nil"
+  [#^Node old_node #^Node new_node]
+  (try
+   (.replaceChild (get-parent old_node) new_node old_node)
+   (catch Exception _ nil)))
+
+(defn get-node-value
+  "Returns the value of the node"
+  [#^Node node]
+  (.getNodeValue node))
+
+(defn clone-node
+  "Returns a copy of the node. Note that the copy will be shallow unless deep parameter is present"
+  [#^Node node & deep]
+  (let [d (if deep true false)]
+    (.cloneNode node d)))
 
 ;; TODO
-;; first-child , last-child 
-;; replace-node! , delete-node!
+;; insert-after!
 

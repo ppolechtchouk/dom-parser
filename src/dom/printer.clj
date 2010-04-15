@@ -2,7 +2,8 @@
    #^{:author "Pavel Polechtchouk"
      :doc "Converts DOM classes to string representations"}
   (:use   [clojure.contrib.str-utils :only (re-split str-join)]
-	  [dom.parser])
+	  [dom.parser]
+	  [dom.node.node])
   (:import  [javax.xml.parsers DocumentBuilderFactory DocumentBuilder]
 	    [org.w3c.dom Document Node NodeList]
 	    [java.net URL]
