@@ -47,5 +47,5 @@ Usage example:
   "Returns a map of :attribute \"value\" of the element node or nil if none."
   [node]
   (when (element? node)
-    (merge (for [attr (node-list (.getAttributes node))] 
+    (apply merge (for [attr (node-list (.getAttributes node))] 
 	     {(to-keyword (.getNodeName attr)) (.getNodeValue attr)}))))

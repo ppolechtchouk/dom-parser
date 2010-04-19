@@ -16,12 +16,17 @@
   "Parses a file on local disk. Returns a Document instance."
   [#^String f]
 ;; TODO error handling + if any problems return NULL
-  (. (get-document-builder) (parse (new java.io.FileInputStream f))))
+  (let [file (new java.io.File f)
+	document (. (get-document-builder) 
+		    (parse (new java.io.FileInputStream file)))]
+    (.setUserData document "source" (.getName file) nil)
+    (.setUserData document "path" (.getPath file) nil)
+    document))
 
 (defn parse-uri
   "Parses the tml represented by the URI and returns a Document instance"
   [#^String uri]
- (. (get-document-builder) (parse uri)))
+ (. (get-document-builder) (parse uri))) ; add source user data and error handling
 
 (defn parse-string
   "Parses the input string and returns a Document instance."
