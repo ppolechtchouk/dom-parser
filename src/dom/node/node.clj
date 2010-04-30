@@ -98,8 +98,15 @@
 (defn get-document
   "Returns the Document the node belongs to, or nil if none"
   [node]
-  (if (node? node)
-    (.getOwnerDocument node)))
+  (cond
+   (document-node? node) node
+   (node? node)(.getOwnerDocument node)
+   :default nil))
+
+(defn get-document-name
+  "Returns the name of the source document, based on Document node user data"
+  [#^Node node]
+  (.getUserData (get-document node) "name"))
 
 (defn next-sibling
   "Returns the next sibling of the node or nil if none or error"

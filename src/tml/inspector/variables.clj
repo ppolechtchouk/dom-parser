@@ -37,12 +37,41 @@ This includes:
 	 (= type "string") "c*"
 	 :default nil))
 
+(defn determine-source
+  "Determines the variable source document based on the DOM structure and Document userdata.
+Returns an array [source system-scope?] or nil if the document is not acceptable as a possible vardcl source
+Source will be either:
+* :embedded - embedded.tml (system scope)
+* :terminal - terminal varlib (system scope)
+* :service - service varlib (service scope)
+* filename - the name of the source file, i.e. index.tml (service scope)"
+  [node]
+  (let [r (get-root node)
+	n (get-document-name node)]
+    (cond
+     (element? r :VarlibScopeTerminalConfigData) [:terminal true]
+     (element? r :VarlibScopeServiceConfigData) [:service nil]
+     (and (element? r :tml) (= n "embedded.tml")) [:embedded true]
+     (element? r :tml) [n nil]
+     :default nil)))
+
+(defn determine-vardcl-root
+  "Returns the <vardcl> parent node based on the document type, or nil if invalid document."
+  [node]
+  (let [r (get-root node)]
+    (cond
+     (element? r :VarlibScopeTerminalConfigData :VarlibScopeServiceConfigData) (first-child (first-child r)) ; <vardcls>
+     (element? r :tml) r
+     :default nil)))
+
+
 (defn dom-node-to-var
-  "Turns a vardcl element node to a variable map. The function will fill the default parameter values. If source is not supplied, it will be set to nil. If system parameter is not nil, the variable is in the system scope.
+  "Turns a vardcl element node to a variable map. The function will fill the default parameter values. If source is not supplied, the function will attempt to resolve it and system parameter automatically as per 'determine-source' function. If system parameter is not nil, the variable is in the system scope.
 Returns a map or nil if error."
   ([node]
-     (dom-node-to-var node nil))
-  ([node source & system]
+     (let [[source system] (determine-source node)]
+       (dom-node-to-var node source system)))
+  ([node source system]
      (when (element? node :vardcl)
        (let [atts (get-attributes node)
 	     type (or (:type atts) "string")]
@@ -60,16 +89,47 @@ Returns a map or nil if error."
 	   :system (if system true)
 	   :source source)))))
 
-(defn get-declared-var-list
+(defn can-read?
+  "Returns true if the permissions allow the variable to be read by the service"
+  [var]
+  (if (:system var)
+    (= (.charAt (:permissions var) 3) \r)
+    (= (.charAt (:permissions var) 0) \r)))
+
+(defn can-write?
+  "Returns true if the permissions allow the variable to be set by the service"
+  [var]
+  (if (:system var)
+    (= (.charAt (:permissions var) 4) \w)
+    (= (.charAt (:permissions var) 1) \w)))
+
+(defn service-accessible?
+  "Returns true if the variable allows either read or write access from the service. I.e. a system var with rw--- permissions will return false"
+  [var]
+  (or (can-read? var) (can-write? var)))
+
+(defn get-vardcl-list
 "Parses all vardcl elements that are the children of this node. So, for a TML file, the node should be a <tml> element.
-Returns a list of variable maps"
+If only one parameter is given, will attempt ot resolve the <vardcl> root node, source and scope automatically, as per 'determine-source' and 'determine-vardcl-root' functions.
+Returns a list of variable maps in order they were declared"
 ([node]
-   (get-declared-var-list node nil))
- ( [node source & system]
+   (let [[source system] (determine-source node)]
+    (get-vardcl-list (determine-vardcl-root node) source system)))
+( [node source system]
     (map #(dom-node-to-var % source system)
      (filter #(element? % :vardcl) (get-children node)))))
 
+(defn get-vardcl-map
+"Parses all vardcl elements that are the children of this node. So, for a TML file, the node should be a <tml> element.
+If only one parameter is given, will attempt ot resolve the <vardcl> root node, source and scope automatically, as per 'determine-source' and 'determine-vardcl-root' functions.
+Returns a map of variable maps, where the keys are variable names"
+([node]
+   (apply merge (map #({(:name %) %}) (get-vardcl-list node))))
+([node source system]
+   (apply merge (map #({(:name %) %}) (get-vardcl-list node source system)))))
 
+
+;; Utility functions
 (defn split-when
   "Separates the coll into a vector of sub-vectors. Each sub-starts starts with the item for which (pred item) returns true. pred must be free of side effects."
   [pred coll]
@@ -90,9 +150,10 @@ Returns a list of variable maps"
 	(conj current (first items))
 	(next items)))))
 
+
+
 ;; TODO
 ;; 
 ;; var-to-dom-node
-;; auto processing of embedded, and varlib configs
-;; 
+;; variable verifications
 

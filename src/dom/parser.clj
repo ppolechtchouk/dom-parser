@@ -19,7 +19,7 @@
   (let [file (new java.io.File f)
 	document (. (get-document-builder) 
 		    (parse (new java.io.FileInputStream file)))]
-    (.setUserData document "source" (.getName file) nil)
+    (.setUserData document "name" (.getName file) nil)
     (.setUserData document "path" (.getPath file) nil)
     document))
 
@@ -41,6 +41,15 @@
       (.startsWith st "<") (parse-string st)
       (.startsWith st "http") (parse-uri st)
       :default (parse-file st))))
+
+(defn parse-all
+  "Returns a vector of document objects. Each document created from the item in the collection."
+  [coll]
+  (loop [result [], source (first coll), more (next coll)]
+    (if source
+      (recur (conj result (parse source)) (first more) (next more))
+      (if (empty? result) nil result))))
+
 
 ; TODO error handling
 

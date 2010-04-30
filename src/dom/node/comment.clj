@@ -1,11 +1,14 @@
 (ns dom.node.comment
     #^{:author "Pavel Polechtchouk"
      :doc "Package for managing comment nodes. For most oerations, the text nodes using dom.node.text/normalize-text! function.
-There are two types of comments:
-<!-- block comment -->
+There are two types of comments that are considered:
+<!-- block comment(immediately above a comment) -->
 <!-- comment -->
 <element>
-In other word an element's comment should be immediately above the element, while a block comment that applies to several elements should be immediately above another comment."}
+In other word an element's comment should be immediately above the element, while a block comment that applies to several elements should be immediately above another comment.
+The block comments can be used as table titles etc.
+Additionally, a comment that begins by @ (@<space>)is ignored:
+<!--@ this comment will be ignored -->"}
    (:use   [clojure.contrib.str-utils :only (re-split str-join)]
 	   [dom.node.node]
 	   [dom.node.element]))
@@ -15,9 +18,11 @@ In other word an element's comment should be immediately above the element, whil
   nil);TODO
 
 (defn has-comment?
-  "Returns true if the node has a comment immediatly above the node"
+  "Returns true if the node has a comment immediatly above the node, and if the comment should not be ignored (i.e. doesnt start with @ )"
   [node]
-  (comment-node? (previous-sibling node)))
+  (and
+   (comment-node? (previous-sibling node))
+   (not (.startsWith (get-node-value (previous-sibling node)) "@ "))))
 
 (defn has-block-comment?
   "Returns true if there is a block comment (a comment above a comment) immediately above the current node"
@@ -34,19 +39,13 @@ In other word an element's comment should be immediately above the element, whil
 (defn get-block-comment
   "Returns the block comment text of the current node or nil if none"
   [node]
-  (if (has-block-comment? node)
-    (get-node-value (previous-sibling node))))
+  (if (has-comment? node)
+    (get-comment (previous-sibling node))))
 
 (defn insert-comment!
   "Insert a comment node immediately above the node. This function does not do any checks, it is better to use update-comment! or update-block-comment! instead. Returns the new comment node."
   [node text]
   (insert-before! node (.createComment (get-document node) text)))
-
-(defn merge-comments!
-  "Creates a new comment node from the node (if it is a comment) and the comment node immediately above it and replaces them. The new node is returned. If the node is not a comment, or there is no comment immediately above, the function does nothing and returns nil"
-  [node]
-  (when (and (comment-node? node) (has-comment? node))
-    ));;TODO
 
 (defn update-comment!
   ""
@@ -57,4 +56,6 @@ In other word an element's comment should be immediately above the element, whil
   [node text]); TODO
 
 ;; TODO
-;; block-comment?
+;; 
+;; normalize-comments!
+;; update-comment! update-block-comment!
